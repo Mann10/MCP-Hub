@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+httpx
+pydantic
+python-dotenv
+pyyaml
+pytest
+pytest-asyncio
+respx

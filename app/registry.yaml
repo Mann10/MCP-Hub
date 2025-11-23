@@ -1,0 +1,31 @@
+servers:
+  huggingface:
+    name: "huggingface"
+    protocol: "http"
+    rpc_endpoint: "https://huggingface.co/mcp"
+    auth_type: "bearer"
+    # api_key_header_name: "x-api-key"
+    extra_headers:
+      Accept: "application/json, text/event-stream"
+    persist_response_headers:
+      - mcp-session-id
+  github:
+    name: "github"
+    protocol: "http"
+    rpc_endpoint: "https://github.com/mcp"
+    auth_type: "bearer"
+  aws_knowledge_base:
+    name: "aws_knowledge_base"
+    protocol: "http"
+    rpc_endpoint: "https://knowledge-mcp.global.api.aws"
+    auth_type: "none"
+    api_key_header_name: "x-api-key"
+  langgraphmcp:
+    name: "langgraphmcp"
+    protocol: "http"
+    rpc_endpoint: "https://gitmcp.io/langchain-ai/langgraph"
+    # api_key_header_name: "x-api-key"
+    extra_headers:
+      Accept: "application/json, text/event-stream"
+    persist_response_headers:
+      - mcp-session-id
