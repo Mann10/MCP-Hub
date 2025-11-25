@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
     session_manager = SessionManager(registry_loader, auth_manager, connection_manager)
     id_mapper = IdMapper()
     multiplexer = MCPMultiplexer(session_manager)
+    session_manager.multiplexer = multiplexer
     protocol_handler = ProtocolHandler(session_manager, multiplexer, id_mapper)
 
     @asynccontextmanager

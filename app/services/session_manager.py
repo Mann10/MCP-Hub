@@ -13,6 +13,7 @@ from .auth_manager import AuthManager
 from .connection_manager import ConnectionManager, BackendHandle
 from .registry_loader import RegistryLoader, ProviderConfig
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,14 +36,53 @@ class SessionManager:
         self,
         registry_loader: RegistryLoader,
         auth_manager: AuthManager,
-        connection_manager: ConnectionManager,
+        connection_manager: ConnectionManager
     ) -> None:
         self.registry_loader = registry_loader
         self.auth_manager = auth_manager
         self.connection_manager = connection_manager
+        self.multiplexer = None
         # session_id -> RuntimeSessionState
         self._runtime_sessions: Dict[UUID, RuntimeSessionState] = {}
-
+        
+    # ---------- Prewarm helpers ----------
+    async def prewarm_session(self,session_id:UUID)-> None:
+        if self.multiplexer is None:
+            logger.info("prewarm_session called but no multiplexer is attached ; skipping")
+            return
+        init_body = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "clientInfo": {
+                    "name": "multi-mcp-gateway",
+                    "version": "0.1.0",
+                },
+                "capabilities": {
+                    "tools": {}
+                },
+            },
+        }
+        tools_list_body = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list",
+            "params": {
+                # Empty params is valid for tools/list
+            },
+        }
+        try:
+            await self.multiplexer.initialize(session_id, init_body)
+        except Exception:
+            logger.exception("Prewarm initialize failed for session %s (continuing)", session_id)
+            
+        try:
+            await self.multiplexer.list_tools(session_id, tools_list_body)
+        except Exception:
+            logger.exception("Prewarm tools/list failed for session %s (continuing)", session_id)
+            
     # ---------- Persistence helpers ----------
 
     def _persist_session(
@@ -145,6 +185,10 @@ class SessionManager:
         # Build runtime (best-effort; if it fails, mark state failed)
         try:
             await self._build_runtime_state(db_session)
+            try:
+                await self.prewarm_session(db_session.id)
+            except Exception:
+                logger.exception("Prewarm failed for session %s (session remains ready)", db_session.id)
         except Exception:
             logger.exception("Failed to create runtime state for session %s", db_session.id)
             self._update_state(db_session.id, "failed")

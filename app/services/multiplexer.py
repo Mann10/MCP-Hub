@@ -61,6 +61,7 @@ class MCPMultiplexer:
             handle = connections[provider]
             resp: httpx.Response | None = None
             try:
+                logger.info(f'Init body :- {initialize_request}')
                 resp = await handle.post(json=initialize_request,timeout=60)
                 print(f'Response for {provider}: status={resp.status_code}')
                 print(f'Headers for {provider}: {resp.headers}')
